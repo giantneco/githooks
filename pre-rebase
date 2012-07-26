@@ -1,0 +1,29 @@
+#!/bin/sh
+
+if test "$#" = 2
+then
+	topic="refs/heads/$2"
+else
+	topic=`git symbolic-ref HEAD` ||
+	exit 0 ;
+fi
+
+# echo "rebasing $1 $topic"
+
+branchroot=`git show-branch --sha1-name $1 $topic | tail -1 | sed 's/^.*\[\(.*\)\].*$/\1/g'`
+
+# echo "$1 and $topic is branched from "
+
+git log --pretty --format=oneline $1 ...$branchroot | sed 's/^[^ ]* //g' |\
+while read line; do
+    if [ ${#line} -lt 5 ]; then
+        echo "too short commit message at branch '$1'"
+        exit 1
+    fi
+    if [ `echo $line | grep -c "tmp"` -gt 0 ]; then
+        echo "tmporary commit at branch '$1'"
+        exit 1
+    fi
+done
+
+
