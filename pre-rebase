@@ -3,6 +3,15 @@
 # 
 #
 
+minlength=`git config prohibit-message.minlength`
+if [ -z "$minlength" ]; then
+    git config prohibit-message.minlength 3
+    minlength=3
+fi
+prohibitword=`git config prohibit-message.word`
+
+set -e
+
 if test "$#" = 2
 then
 	topic="refs/heads/$2"
@@ -19,12 +28,14 @@ branchroot=`git show-branch --sha1-name $1 $topic | tail -1 | sed 's/^.*\[\(.*\)
 
 git log --pretty --format=oneline $1 ...$branchroot | sed 's/^[^ ]* //g' |\
 while read line; do
-    if [ ${#line} -lt 5 ]; then
-        echo "too short commit message at branch '$1'"
+    if [ ${#line} -lt ${minlength} ]; then
+        echo "commit message at branch '$1' seems temporary message (shorter than ${minlength} characters)."
+	echo "prohibit to rebase with temporary commit."
         exit 1
     fi
-    if [ `echo $line | grep -c "tmp"` -gt 0 ]; then
-        echo "tmporary commit at branch '$1'"
+    if [ ! -z "${prohibitword}" ] && [ `echo $line | grep -c "$prohibitword"` -gt 0 ]; then
+        echo "commit message at branch '$1' seems temporary message (include prohibit word)."
+	echo "prohibit to rebase with temporary commit."
         exit 1
     fi
 done
